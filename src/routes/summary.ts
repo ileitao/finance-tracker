@@ -17,15 +17,10 @@ export async function summaryRoutes(app: FastifyInstance) {
       byCategory: {}
     }
 
+    // DB queries
      const whereClause = {
       ...(month && { date: { startsWith: month } }),
     };
-
-    const transactions = await prisma.transaction.findMany({
-      where: whereClause,
-    });
-
-    let categories = [...new Set(transactions.map(t => t.category))];
 
     const totalIncome = await prisma.transaction.aggregate({
         where: { ...whereClause, type: 'income' },
@@ -35,15 +30,20 @@ export async function summaryRoutes(app: FastifyInstance) {
         where: { ...whereClause, type: 'expense' },
         _sum: { amount: true },
     });
-    categories
-      .forEach(
-        value => result.byCategory[value] = transactions
-            .filter(t => t.category === value)
-            .reduce((acc, current) => acc + current.amount, 0));
+    const byCategory = await prisma.transaction.groupBy({
+        by: ["category"],
+        where: whereClause,
+        _sum: { amount: true },
+    });
 
+    // Build response
     result.totalExpenses = totalExpenses._sum.amount ?? 0;
     result.totalIncome = totalIncome._sum.amount ?? 0;
     result.balance = result.totalIncome - result.totalExpenses;
+    result.byCategory = byCategory.reduce<Record<string, number>>((prev, curr) => {
+        prev[curr.category] = curr._sum.amount ?? 0; 
+        return prev;
+    }, {});
     return result;
   });
 }
