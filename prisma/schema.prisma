@@ -6,6 +6,15 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  transactions Transaction[]
+}
+
 model Transaction {
   id          String   @id @default(uuid())
   amount      Float
@@ -15,4 +24,6 @@ model Transaction {
   date        String
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
 }
