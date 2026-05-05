@@ -45,7 +45,7 @@ export async function summaryRoutes(app: FastifyInstance) {
     result.totalIncome = totalIncome._sum.amount ?? 0;
     result.balance = result.totalIncome - result.totalExpenses;
     result.byCategory = byCategory.reduce<Record<string, number>>(
-      (prev, curr) => {
+      (prev: Record<string, number>, curr) => {
         prev[curr.category] = curr._sum.amount ?? 0;
         return prev;
       },
